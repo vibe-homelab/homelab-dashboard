@@ -1,5 +1,7 @@
 # Homelab Dashboard
 
+![Dashboard Screenshot](docs/images/dashboard-hero.png)
+
 모든 vibe-homelab 서비스의 상태를 모니터링하고 관리하는 대시보드입니다.
 
 ## Features

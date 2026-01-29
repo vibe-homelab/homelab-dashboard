@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { Layout } from './components/layout/Layout';
 import { Overview } from './components/dashboard/Overview';
 import { ServiceCard } from './components/dashboard/ServiceCard';
@@ -7,8 +7,9 @@ import { useDashboardStore } from './stores/dashboardStore';
 import { fetchServices } from './services/api';
 
 function App() {
-  const { setServices } = useDashboardStore();
-  const services = useDashboardStore((state) => Array.from(state.services.values()));
+  const setServices = useDashboardStore((state) => state.setServices);
+  const servicesMap = useDashboardStore((state) => state.services);
+  const services = useMemo(() => Array.from(servicesMap.values()), [servicesMap]);
 
   // Connect WebSocket
   useWebSocket();

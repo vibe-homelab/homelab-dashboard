@@ -5,7 +5,8 @@ import type { ServiceStatus } from '../types';
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
-  const { updateService, setWsConnected } = useDashboardStore();
+  const updateService = useDashboardStore((state) => state.updateService);
+  const setWsConnected = useDashboardStore((state) => state.setWsConnected);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
