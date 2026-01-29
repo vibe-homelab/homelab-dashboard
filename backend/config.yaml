@@ -1,0 +1,68 @@
+# Homelab Dashboard Configuration
+
+dashboard:
+  host: "0.0.0.0"
+  port: 8080
+
+# Service Registry
+services:
+  vision-insight:
+    name: "Vision Insight API"
+    description: "MLX 가속 이미지 생성 및 분석 서비스"
+    icon: "eye"
+    gateway:
+      host: "localhost"
+      port: 8000
+    worker_manager:
+      host: "localhost"
+      port: 8100
+    endpoints:
+      health: "/healthz"
+      status: "/v1/system/status"
+      models: "/v1/models"
+      evict: "/v1/system/evict/{alias}"
+    workers:
+      - alias: "vlm-fast"
+        name: "Vision LM (Fast)"
+        type: "vlm"
+      - alias: "vlm-best"
+        name: "Vision LM (Best)"
+        type: "vlm"
+      - alias: "image-gen"
+        name: "Image Generation"
+        type: "diffusion"
+
+  voice-insight:
+    name: "Voice Insight API"
+    description: "MLX 가속 음성 인식 및 합성 서비스"
+    icon: "microphone"
+    gateway:
+      host: "localhost"
+      port: 8001
+    worker_manager:
+      host: "localhost"
+      port: 8100
+    endpoints:
+      health: "/healthz"
+      status: "/v1/system/status"
+      models: "/v1/models"
+      evict: "/v1/system/evict/{alias}"
+    workers:
+      - alias: "stt-fast"
+        name: "Speech-to-Text (Fast)"
+        type: "stt"
+      - alias: "stt-best"
+        name: "Speech-to-Text (Best)"
+        type: "stt"
+      - alias: "tts-fast"
+        name: "Text-to-Speech (Fast)"
+        type: "tts"
+
+# Polling settings
+polling:
+  health_interval_seconds: 10
+  status_interval_seconds: 5
+
+# WebSocket settings
+websocket:
+  heartbeat_interval_seconds: 30

@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: homelab-dashboard-backend-dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/src:/app/src:ro
+      - ./backend/config.yaml:/app/config.yaml:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
+    restart: unless-stopped
