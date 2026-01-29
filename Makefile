@@ -28,7 +28,7 @@ install:
 dev: dev-backend dev-frontend
 
 dev-backend:
-	cd backend && uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
+	cd backend && uvicorn src.main:app --host 0.0.0.0 --port 4010 --reload
 
 dev-frontend:
 	cd frontend && npm run dev
@@ -51,10 +51,10 @@ status:
 	@docker compose ps
 	@echo ""
 	@echo "=== Backend Health ==="
-	@curl -s http://localhost:8080/healthz 2>/dev/null | python3 -m json.tool || echo "Backend not running"
+	@curl -s http://localhost:4010/healthz 2>/dev/null | python3 -m json.tool || echo "Backend not running"
 	@echo ""
 	@echo "=== Services ==="
-	@curl -s http://localhost:8080/api/v1/services 2>/dev/null | python3 -m json.tool || echo "API not available"
+	@curl -s http://localhost:4010/api/v1/services 2>/dev/null | python3 -m json.tool || echo "API not available"
 
 # Cleanup
 clean:
