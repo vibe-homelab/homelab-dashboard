@@ -51,11 +51,29 @@ async def get_worker_manager_status(
                 memory = None
                 if "memory" in data:
                     mem = data["memory"]
+                    total_gb = float(mem.get("total_gb", 0) or 0)
+                    available_gb = float(mem.get("available_gb", 0) or 0)
+
+                    used_gb_raw = mem.get("used_gb", None)
+                    if used_gb_raw is None:
+                        # Vision Worker Manager older payloads may omit used_gb.
+                        if total_gb and available_gb:
+                            used_gb_raw = total_gb - available_gb
+                        else:
+                            used_gb_raw = 0
+                    used_gb = float(used_gb_raw or 0)
+
+                    used_percent_raw = mem.get("used_percent", None)
+                    if used_percent_raw is None:
+                        # Voice Worker Manager older payloads may use usage_percent.
+                        used_percent_raw = mem.get("usage_percent", 0)
+                    used_percent = float(used_percent_raw or 0)
+
                     memory = MemoryStatus(
-                        total_gb=mem.get("total_gb", 0),
-                        available_gb=mem.get("available_gb", 0),
-                        used_gb=mem.get("used_gb", 0),
-                        used_percent=mem.get("used_percent", 0),
+                        total_gb=total_gb,
+                        available_gb=available_gb,
+                        used_gb=used_gb,
+                        used_percent=used_percent,
                     )
 
                 return WorkerManagerStatus(

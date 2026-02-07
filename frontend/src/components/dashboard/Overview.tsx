@@ -8,6 +8,13 @@ export function Overview() {
   const [overview, setOverview] = useState<SystemOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const colorStyles = {
+    blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
+    green: { bg: 'bg-green-100', text: 'text-green-600' },
+    purple: { bg: 'bg-purple-100', text: 'text-purple-600' },
+    yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600' },
+  } as const;
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -68,6 +75,7 @@ export function Overview() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       {stats.map((stat) => (
+        // Use explicit Tailwind classes (no dynamic template strings), so styles survive production builds.
         <div
           key={stat.label}
           className="bg-white rounded-lg p-4 border border-gray-200"
@@ -78,9 +86,17 @@ export function Overview() {
               <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
               <p className="text-xs text-gray-400">{stat.subValue}</p>
             </div>
-            <div className={`p-3 bg-${stat.color}-100 rounded-full`}>
-              <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
-            </div>
+            {(() => {
+              const styles =
+                colorStyles[
+                  stat.color as keyof typeof colorStyles
+                ] ?? colorStyles.blue;
+              return (
+                <div className={`p-3 ${styles.bg} rounded-full`}>
+                  <stat.icon className={`w-6 h-6 ${styles.text}`} />
+                </div>
+              );
+            })()}
           </div>
         </div>
       ))}

@@ -9,6 +9,11 @@ from ..core import ServiceRegistry
 
 router = APIRouter(prefix="/api/v1/services/{service_id}/workers", tags=["workers"])
 
+def _gateway_headers(service_cfg) -> dict[str, str]:
+    if getattr(service_cfg, "api_key", None):
+        return {"Authorization": f"Bearer {service_cfg.api_key}"}
+    return {}
+
 
 class WorkerActionResponse(BaseModel):
     success: bool
@@ -158,7 +163,10 @@ async def evict_worker(service_id: str, alias: str):
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(f"{service_cfg.gateway.url}{evict_url}")
+            response = await client.post(
+                f"{service_cfg.gateway.url}{evict_url}",
+                headers=_gateway_headers(service_cfg),
+            )
             if response.status_code == 200:
                 return WorkerActionResponse(
                     success=True,

@@ -9,7 +9,7 @@ import yaml
 @dataclass
 class DashboardSettings:
     host: str = "0.0.0.0"
-    port: int = 8080
+    port: int = 4010
 
 
 @dataclass
@@ -53,6 +53,7 @@ class ServiceConfig:
     name: str
     description: str
     icon: str
+    api_key: str | None
     gateway: GatewayConfig
     worker_manager: WorkerManagerConfig
     endpoints: EndpointsConfig
@@ -94,7 +95,7 @@ def load_config(config_path: str | Path) -> DashboardConfig:
     dashboard_raw = raw.get("dashboard", {})
     dashboard = DashboardSettings(
         host=dashboard_raw.get("host", "0.0.0.0"),
-        port=dashboard_raw.get("port", 8080),
+        port=dashboard_raw.get("port", 4010),
     )
 
     # Parse services
@@ -118,6 +119,7 @@ def load_config(config_path: str | Path) -> DashboardConfig:
             name=svc_raw.get("name", service_id),
             description=svc_raw.get("description", ""),
             icon=svc_raw.get("icon", "server"),
+            api_key=svc_raw.get("api_key"),
             gateway=GatewayConfig(
                 host=gateway_raw.get("host", "localhost"),
                 port=gateway_raw.get("port", 8000),

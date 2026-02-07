@@ -20,7 +20,7 @@
 make build
 make start
 
-# 브라우저에서 http://localhost:3000 접속
+# 브라우저에서 http://localhost:4000 접속
 ```
 
 ### Development
@@ -47,10 +47,10 @@ services:
   vision-insight:
     name: "Vision Insight API"
     gateway:
-      host: "localhost"
+      host: "host.docker.internal"
       port: 8000
     worker_manager:
-      host: "localhost"
+      host: "host.docker.internal"
       port: 8100
     workers:
       - alias: "vlm-fast"
@@ -62,7 +62,8 @@ services:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                  Browser (:3000)                    │
+│               Browser (:4000 Docker)                │
+│               Browser (:3000 Dev)                   │
 └─────────────────────────┬───────────────────────────┘
                           │
           ┌───────────────▼───────────────┐
@@ -72,7 +73,7 @@ services:
           └───────────────┬───────────────┘
                           │
           ┌───────────────▼───────────────┐
-          │     Backend (FastAPI) :8080   │
+          │     Backend (FastAPI) :4010   │
           │     - REST API                │
           │     - WebSocket Server        │
           │     - Health Checker          │
@@ -84,7 +85,7 @@ services:
 ┌───────────┐      ┌───────────┐        ┌───────────┐
 │  Vision   │      │   Voice   │        │  Future   │
 │  Insight  │      │  Insight  │        │  Service  │
-│  :8000    │      │  :8001    │        │           │
+│  :8000    │      │  :8200    │        │           │
 └───────────┘      └───────────┘        └───────────┘
 ```
 

@@ -10,11 +10,13 @@ services:
     name: "Vision Insight API"
     description: "MLX 가속 이미지 생성 및 분석 서비스"
     icon: "eye"
+    # Optional: if the service gateway enforces auth, set the same key here.
+    # api_key: ""
     gateway:
-      host: "localhost"
+      host: "host.docker.internal"
       port: 8000
     worker_manager:
-      host: "localhost"
+      host: "host.docker.internal"
       port: 8100
     endpoints:
       health: "/healthz"
@@ -36,12 +38,14 @@ services:
     name: "Voice Insight API"
     description: "MLX 가속 음성 인식 및 합성 서비스"
     icon: "microphone"
+    # Optional: if the service gateway enforces auth, set the same key here.
+    # api_key: ""
     gateway:
-      host: "localhost"
-      port: 8001
+      host: "host.docker.internal"
+      port: 8200
     worker_manager:
-      host: "localhost"
-      port: 8100
+      host: "host.docker.internal"
+      port: 8210
     endpoints:
       health: "/healthz"
       status: "/v1/system/status"
@@ -56,6 +60,9 @@ services:
         type: "stt"
       - alias: "tts-fast"
         name: "Text-to-Speech (Fast)"
+        type: "tts"
+      - alias: "tts-stream"
+        name: "Text-to-Speech (Stream)"
         type: "tts"
 
 # Polling settings

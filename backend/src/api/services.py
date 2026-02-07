@@ -10,6 +10,11 @@ from ..core import ServiceRegistry
 
 router = APIRouter(prefix="/api/v1/services", tags=["services"])
 
+def _gateway_headers(service_cfg) -> dict[str, str]:
+    if getattr(service_cfg, "api_key", None):
+        return {"Authorization": f"Bearer {service_cfg.api_key}"}
+    return {}
+
 
 class GatewayStatus(BaseModel):
     reachable: bool
@@ -212,7 +217,8 @@ async def get_service_system_status(service_id: str) -> dict[str, Any]:
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(
-                f"{service_cfg.gateway.url}{service_cfg.endpoints.status}"
+                f"{service_cfg.gateway.url}{service_cfg.endpoints.status}",
+                headers=_gateway_headers(service_cfg),
             )
             return response.json()
     except Exception as e:
