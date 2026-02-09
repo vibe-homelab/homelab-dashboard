@@ -42,6 +42,8 @@ make start
 
 ### Development
 
+Frontend 패키지 매니저는 `pnpm`을 사용합니다 (권장: `corepack enable`).
+
 ```bash
 # 의존성 설치
 make install

@@ -23,7 +23,7 @@ help:
 # Development
 install:
 	cd backend && pip install -r requirements.txt
-	cd frontend && npm install
+	cd frontend && pnpm install
 
 dev: dev-backend dev-frontend
 
@@ -31,7 +31,7 @@ dev-backend:
 	cd backend && uvicorn src.main:app --host 0.0.0.0 --port 4010 --reload
 
 dev-frontend:
-	cd frontend && npm run dev
+	cd frontend && pnpm run dev
 
 # Docker
 build:
@@ -65,4 +65,4 @@ clean:
 # Testing
 test:
 	cd backend && pytest -v
-	cd frontend && npm run lint
+	cd frontend && pnpm run lint
