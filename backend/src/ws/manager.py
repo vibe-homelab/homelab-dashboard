@@ -1,11 +1,9 @@
 """WebSocket connection manager for real-time updates."""
-import asyncio
-import json
 import time
 import uuid
 from typing import Any
 
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
 
 
 class WebSocketManager:

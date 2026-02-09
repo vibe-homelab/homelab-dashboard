@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import services_router, workers_router, system_router
+from .api import services_router, system_router, workers_router
 from .core import get_config
 from .services.health_checker import health_checker
 from .ws import ws_manager
