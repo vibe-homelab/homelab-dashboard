@@ -54,7 +54,7 @@ services:
       exclusive: false
     launch:
       type: process
-      working_dir: "/raid/home/june/workspace/self-hosted-image-api"
+      working_dir: "/raid/home/june/workspace/vision-insight-api"
       command: [".venv/bin/python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0"]
       port: 8001
       env:
@@ -87,7 +87,7 @@ services:
       exclusive: false
     launch:
       type: process
-      working_dir: "/raid/home/june/workspace/self-hosted-voice-api"
+      working_dir: "/raid/home/june/workspace/voice-insight-api"
       command: [".venv-stt/bin/vllm", "serve", "mistralai/Voxtral-Mini-4B-Realtime-2602"]
       port: 8002
       env:
@@ -114,7 +114,7 @@ services:
       exclusive: false
     launch:
       type: process
-      working_dir: "/raid/home/june/workspace/self-hosted-voice-api"
+      working_dir: "/raid/home/june/workspace/voice-insight-api"
       command: [".venv-tts/bin/python", "-m", "uvicorn", "tts_server:app", "--host", "0.0.0.0"]
       port: 8003
       env:
