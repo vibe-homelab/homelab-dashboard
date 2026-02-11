@@ -23,8 +23,8 @@ services:
       type: docker
       image: "vllm/vllm-openai:latest"
       container_name: "orchestrator-llm"
-      working_dir: "/raid/home/june/workspace/self-hosted-llm"
-      models_dir: "/raid/home/june/workspace/self-hosted-llm/models"
+      working_dir: "/raid/home/june/workspace/language-insight-api"
+      models_dir: "/raid/home/june/workspace/language-insight-api/models"
       model_preset: "gpt-oss-120b"
       port: 8000
       env:
