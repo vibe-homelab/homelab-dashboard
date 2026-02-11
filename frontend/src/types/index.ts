@@ -1,76 +1,95 @@
-export interface GatewayStatus {
-  reachable: boolean;
-  latency_ms?: number;
-  error?: string;
+// GPU Types
+export interface GpuInfo {
+  gpu_id: number;
+  status: 'free' | 'allocated' | 'starting' | 'error';
+  allocated_to: string | null;
+  allocated_at: string | null;
 }
 
-export interface WorkerStatus {
-  alias: string;
-  name: string;
-  type: string;
-  status: 'running' | 'stopped' | 'starting' | 'error' | 'unknown';
-  port?: number;
-  memory_gb?: number;
-  uptime_seconds?: number;
-  idle_seconds?: number;
+export interface GpuPoolState {
+  gpus: GpuInfo[];
+  total: number;
+  free: number;
+  allocated: number;
 }
 
-export interface ServiceStatus {
+// Queue Types
+export interface QueueEntry {
+  id: string;
   service_id: string;
-  name: string;
-  description: string;
-  icon: string;
-  status: 'healthy' | 'unhealthy' | 'unknown';
-  gateway: GatewayStatus;
-  workers: WorkerStatus[];
+  status: 'pending' | 'dispatched' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'timeout';
+  created_at: string;
+  dispatched_at: string | null;
+  completed_at: string | null;
+  request_payload: Record<string, unknown>;
+  response_payload: Record<string, unknown> | null;
+  error_message: string | null;
+  position: number | null;
+  gpu_ids: number[];
 }
 
-export interface MemoryStatus {
-  total_gb: number;
-  available_gb: number;
-  used_gb: number;
-  used_percent: number;
+export interface QueueState {
+  entries: QueueEntry[];
+  total_pending: number;
+  total_processing: number;
+  total_completed: number;
 }
 
-export interface WorkerManagerStatus {
+// Service Types
+export interface ServiceState {
   service_id: string;
-  reachable: boolean;
-  workers_count: number;
-  memory?: MemoryStatus;
-  error?: string;
+  display_name: string;
+  status: 'stopped' | 'starting' | 'healthy' | 'unhealthy' | 'stopping' | 'error';
+  gpu_ids: number[];
+  port: number | null;
+  pid: number | null;
+  container_id: string | null;
+  started_at: string | null;
+  last_request_at: string | null;
+  active_requests: number;
+  total_requests_served: number;
+  idle_seconds: number;
+  error_message: string | null;
+  // Extended fields from API
+  description?: string;
+  icon?: string;
+  gpu_requirement?: {
+    min_gpus: number;
+    max_gpus: number;
+    exclusive: boolean;
+  };
+  idle_timeout_sec?: number;
 }
 
+// System Overview
 export interface SystemOverview {
   timestamp: number;
-  services_count: number;
-  healthy_services: number;
-  unhealthy_services: number;
-  total_workers: number;
-  running_workers: number;
-  worker_managers: WorkerManagerStatus[];
+  gpu: {
+    total: number;
+    free: number;
+    allocated: number;
+  };
+  queue: {
+    pending: number;
+    processing: number;
+    completed: number;
+  };
+  services: {
+    total: number;
+    running: number;
+    stopped: number;
+  };
 }
 
-export interface WorkerActionResponse {
-  success: boolean;
-  message: string;
-  worker_alias: string;
-  action: string;
-  data?: Record<string, unknown>;
-}
-
-// WebSocket message types
+// WebSocket Types
 export interface WSMessage {
   type: string;
   timestamp: number;
   data: unknown;
 }
 
-export interface WSServiceUpdate extends WSMessage {
-  type: 'services_update';
-  data: ServiceStatus;
-}
-
-export interface WSWorkerUpdate extends WSMessage {
-  type: 'workers_update';
-  data: WorkerStatus;
+export interface FullStateData {
+  gpus: GpuPoolState;
+  queue: QueueState;
+  services: Record<string, ServiceState>;
 }

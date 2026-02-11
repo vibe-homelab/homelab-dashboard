@@ -1,38 +1,51 @@
 import { create } from 'zustand';
-import type { ServiceStatus, SystemOverview } from '../types';
+import type { GpuPoolState, QueueState, ServiceState, FullStateData } from '../types';
 
 interface DashboardState {
-  services: Map<string, ServiceStatus>;
-  systemOverview: SystemOverview | null;
+  gpus: GpuPoolState | null;
+  queue: QueueState | null;
+  services: Record<string, ServiceState>;
   wsConnected: boolean;
   lastUpdate: number | null;
 
   // Actions
-  setServices: (services: ServiceStatus[]) => void;
-  updateService: (service: ServiceStatus) => void;
-  setSystemOverview: (overview: SystemOverview) => void;
+  setFullState: (data: FullStateData) => void;
+  setGpuState: (gpus: GpuPoolState) => void;
+  setQueueState: (queue: QueueState) => void;
+  setServiceState: (serviceId: string, state: ServiceState) => void;
+  setAllServices: (services: Record<string, ServiceState>) => void;
   setWsConnected: (connected: boolean) => void;
 }
 
 export const useDashboardStore = create<DashboardState>((set) => ({
-  services: new Map(),
-  systemOverview: null,
+  gpus: null,
+  queue: null,
+  services: {},
   wsConnected: false,
   lastUpdate: null,
 
-  setServices: (services) =>
+  setFullState: (data) =>
     set({
-      services: new Map(services.map((s) => [s.service_id, s])),
+      gpus: data.gpus,
+      queue: data.queue,
+      services: data.services,
       lastUpdate: Date.now(),
     }),
 
-  updateService: (service) =>
-    set((state) => ({
-      services: new Map(state.services).set(service.service_id, service),
+  setGpuState: (gpus) =>
+    set({ gpus, lastUpdate: Date.now() }),
+
+  setQueueState: (queue) =>
+    set({ queue, lastUpdate: Date.now() }),
+
+  setServiceState: (serviceId, state) =>
+    set((prev) => ({
+      services: { ...prev.services, [serviceId]: state },
       lastUpdate: Date.now(),
     })),
 
-  setSystemOverview: (overview) => set({ systemOverview: overview }),
+  setAllServices: (services) =>
+    set({ services, lastUpdate: Date.now() }),
 
   setWsConnected: (connected) => set({ wsConnected: connected }),
 }));

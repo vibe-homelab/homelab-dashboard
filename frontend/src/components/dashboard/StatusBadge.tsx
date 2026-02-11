@@ -1,7 +1,7 @@
 import { CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 interface StatusBadgeProps {
-  status: 'healthy' | 'unhealthy' | 'unknown' | 'running' | 'stopped' | 'starting' | 'error';
+  status: 'healthy' | 'unhealthy' | 'unknown' | 'running' | 'stopped' | 'starting' | 'stopping' | 'error';
   size?: 'sm' | 'md';
 }
 
@@ -45,6 +45,12 @@ export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
       text: 'text-yellow-700',
       icon: Loader2,
       label: 'Starting',
+    },
+    stopping: {
+      bg: 'bg-orange-100',
+      text: 'text-orange-700',
+      icon: Loader2,
+      label: 'Stopping',
     },
     unknown: {
       bg: 'bg-gray-100',

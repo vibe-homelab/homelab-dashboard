@@ -1,185 +1,102 @@
-"""Worker control API endpoints."""
+"""Queue API endpoints for GPU Orchestrator."""
 from typing import Any
 
-import httpx
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, Field
 
-from ..core import ServiceRegistry
-
-router = APIRouter(prefix="/api/v1/services/{service_id}/workers", tags=["workers"])
-
-def _gateway_headers(service_cfg) -> dict[str, str]:
-    if getattr(service_cfg, "api_key", None):
-        return {"Authorization": f"Bearer {service_cfg.api_key}"}
-    return {}
+router = APIRouter(prefix="/api/v1/queue", tags=["queue"])
 
 
-class WorkerActionResponse(BaseModel):
-    success: bool
-    message: str
-    worker_alias: str
-    action: str
-    data: dict[str, Any] | None = None
+class SubmitRequest(BaseModel):
+    service_id: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class SubmitResponse(BaseModel):
+    queue_entry_id: str
+    position: int
+    service_id: str
+    status: str
+
+
+@router.post("/submit", response_model=SubmitResponse)
+async def submit_request(body: SubmitRequest, request: Request):
+    """Submit a request to the GPU queue."""
+    rq = request.app.state.request_queue
+    config = request.app.state.config
+
+    if body.service_id not in config.services:
+        raise HTTPException(400, f"Unknown service: {body.service_id}")
+
+    try:
+        entry = await rq.enqueue(body.service_id, body.payload)
+    except ValueError as exc:
+        raise HTTPException(429, str(exc))
+
+    return SubmitResponse(
+        queue_entry_id=entry.id,
+        position=entry.position or 0,
+        service_id=entry.service_id,
+        status=entry.status.value,
+    )
+
+
+@router.get("/status/{entry_id}")
+async def get_entry_status(entry_id: str, request: Request):
+    """Get the status of a specific queue entry."""
+    rq = request.app.state.request_queue
+    entry = await rq.get_entry(entry_id)
+    if not entry:
+        raise HTTPException(404, "Queue entry not found")
+    return entry.model_dump(mode="json")
+
+
+@router.delete("/{entry_id}")
+async def cancel_entry(entry_id: str, request: Request):
+    """Cancel a pending queue entry."""
+    rq = request.app.state.request_queue
+    entry = await rq.cancel(entry_id)
+    if not entry:
+        raise HTTPException(404, "Entry not found or not in pending state")
+    return {"cancelled": True, "entry_id": entry_id}
 
 
 @router.get("")
-async def list_workers(service_id: str):
-    """List all workers for a service."""
-    registry = ServiceRegistry()
-    service_cfg = registry.get_service(service_id)
-
-    if not service_cfg:
-        raise HTTPException(status_code=404, detail=f"Service not found: {service_id}")
-
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(f"{service_cfg.worker_manager.url}/status")
-            if response.status_code == 200:
-                data = response.json()
-                active_workers = data.get("workers", {})
-
-                workers = []
-                for worker_cfg in service_cfg.workers:
-                    alias = worker_cfg.alias
-                    if alias in active_workers:
-                        w = active_workers[alias]
-                        workers.append(
-                            {
-                                "alias": alias,
-                                "name": worker_cfg.name,
-                                "type": worker_cfg.type,
-                                "status": "running",
-                                "port": w.get("port"),
-                                "memory_gb": w.get("memory_gb"),
-                                "uptime_seconds": w.get("uptime_seconds"),
-                                "idle_seconds": w.get("idle_seconds"),
-                            }
-                        )
-                    else:
-                        workers.append(
-                            {
-                                "alias": alias,
-                                "name": worker_cfg.name,
-                                "type": worker_cfg.type,
-                                "status": "stopped",
-                            }
-                        )
-                return {"workers": workers}
-            else:
-                raise HTTPException(
-                    status_code=503, detail="Worker manager not responding"
-                )
-    except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="Worker manager not reachable")
+async def get_queue(request: Request, include_history: bool = False):
+    """Get the full queue state."""
+    rq = request.app.state.request_queue
+    state = await rq.get_state(include_history=include_history)
+    return state.model_dump(mode="json")
 
 
-@router.post("/{alias}/spawn", response_model=WorkerActionResponse)
-async def spawn_worker(service_id: str, alias: str):
-    """Start/spawn a worker."""
-    registry = ServiceRegistry()
-    service_cfg = registry.get_service(service_id)
-
-    if not service_cfg:
-        raise HTTPException(status_code=404, detail=f"Service not found: {service_id}")
-
-    # Verify worker alias exists in config
-    valid_aliases = [w.alias for w in service_cfg.workers]
-    if alias not in valid_aliases:
-        raise HTTPException(
-            status_code=404, detail=f"Worker not found: {alias}"
-        )
-
-    try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                f"{service_cfg.worker_manager.url}/spawn/{alias}"
-            )
-            if response.status_code == 200:
-                data = response.json()
-                return WorkerActionResponse(
-                    success=True,
-                    message=f"Worker '{alias}' spawned successfully",
-                    worker_alias=alias,
-                    action="spawn",
-                    data=data,
-                )
-            else:
-                return WorkerActionResponse(
-                    success=False,
-                    message=f"Failed to spawn worker: HTTP {response.status_code}",
-                    worker_alias=alias,
-                    action="spawn",
-                    data=response.json() if response.content else None,
-                )
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Worker spawn timeout")
-    except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="Worker manager not reachable")
+class ProxyRequest(BaseModel):
+    service_id: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    timeout_sec: int = 600
 
 
-@router.post("/{alias}/stop", response_model=WorkerActionResponse)
-async def stop_worker(service_id: str, alias: str):
-    """Stop a worker."""
-    registry = ServiceRegistry()
-    service_cfg = registry.get_service(service_id)
+@router.post("/proxy")
+async def proxy_request(body: ProxyRequest, request: Request):
+    """Submit a request and wait synchronously for the result."""
+    import asyncio
 
-    if not service_cfg:
-        raise HTTPException(status_code=404, detail=f"Service not found: {service_id}")
+    rq = request.app.state.request_queue
+    config = request.app.state.config
 
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                f"{service_cfg.worker_manager.url}/stop/{alias}"
-            )
-            if response.status_code == 200:
-                return WorkerActionResponse(
-                    success=True,
-                    message=f"Worker '{alias}' stopped successfully",
-                    worker_alias=alias,
-                    action="stop",
-                )
-            else:
-                return WorkerActionResponse(
-                    success=False,
-                    message=f"Failed to stop worker: HTTP {response.status_code}",
-                    worker_alias=alias,
-                    action="stop",
-                )
-    except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="Worker manager not reachable")
+    if body.service_id not in config.services:
+        raise HTTPException(400, f"Unknown service: {body.service_id}")
 
+    entry = await rq.enqueue(body.service_id, body.payload)
 
-@router.post("/{alias}/evict", response_model=WorkerActionResponse)
-async def evict_worker(service_id: str, alias: str):
-    """Force evict a worker through the gateway."""
-    registry = ServiceRegistry()
-    service_cfg = registry.get_service(service_id)
+    deadline = asyncio.get_event_loop().time() + body.timeout_sec
+    while asyncio.get_event_loop().time() < deadline:
+        current = await rq.get_entry(entry.id)
+        if current is None:
+            raise HTTPException(500, "Entry disappeared")
 
-    if not service_cfg:
-        raise HTTPException(status_code=404, detail=f"Service not found: {service_id}")
+        if current.status.value in ("completed", "failed", "cancelled", "timeout"):
+            return current.model_dump(mode="json")
 
-    evict_url = service_cfg.endpoints.evict.replace("{alias}", alias)
+        await asyncio.sleep(1.0)
 
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                f"{service_cfg.gateway.url}{evict_url}",
-                headers=_gateway_headers(service_cfg),
-            )
-            if response.status_code == 200:
-                return WorkerActionResponse(
-                    success=True,
-                    message=f"Worker '{alias}' evicted successfully",
-                    worker_alias=alias,
-                    action="evict",
-                )
-            else:
-                return WorkerActionResponse(
-                    success=False,
-                    message=f"Failed to evict worker: HTTP {response.status_code}",
-                    worker_alias=alias,
-                    action="evict",
-                )
-    except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="Gateway not reachable")
+    raise HTTPException(504, f"Request {entry.id} timed out after {body.timeout_sec}s")

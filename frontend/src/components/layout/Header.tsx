@@ -11,8 +11,8 @@ export function Header() {
         <div className="flex items-center gap-3">
           <Activity className="w-8 h-8 text-blue-600" />
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Homelab Dashboard</h1>
-            <p className="text-sm text-gray-500">Service Monitoring & Control</p>
+            <h1 className="text-xl font-bold text-gray-900">GPU Orchestrator</h1>
+            <p className="text-sm text-gray-500">Homelab GPU Resource Management</p>
           </div>
         </div>
 
